@@ -1,0 +1,54 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+
+# 1. Cargar los datos
+df = pd.read_csv('C:/Users/Gobierno/Desktop/star.csv', sep=',', encoding='latin1')
+
+# 2. Excluir las últimas dos columnas de texto (si es necesario)
+df_numerico = df.iloc[:, :-2]
+
+# 3. Convertir valores no numéricos a NaN y limpiar el dataset
+df_numerico = df_numerico.apply(pd.to_numeric, errors='coerce')
+df_numerico = df_numerico.dropna()
+
+# 4. Normalizar los datos
+features = df_numerico.values
+features_normalizadas = StandardScaler().fit_transform(features)
+
+# 5. Obtener los autovectores y autovalores a partir de la matriz de covarianza
+matriz_cov = np.cov(features_normalizadas, rowvar=False)
+autovalores, autovectores = np.linalg.eig(matriz_cov)
+
+# 6. Seleccionar los autovectores correspondientes a las componentes principales
+indices_ordenados = np.argsort(autovalores)[::-1]
+autovectores_ordenados = autovectores[:, indices_ordenados]
+
+# Selecciona los autovectores correspondientes a las 3 primeras componentes principales
+autovectores_principales = autovectores_ordenados[:, :3]
+
+# 7. Proyectar el dataset original sobre el nuevo espacio de dimensión <= 3
+dataset_proyectado = np.dot(features_normalizadas, autovectores_principales)
+
+# Convertir a DataFrame para visualizar
+df_proyectado = pd.DataFrame(dataset_proyectado, columns=['PC1', 'PC2', 'PC3'])
+
+# Mostrar los datos de la tabla resultante
+print("Tabla de los resultados del PCA:")
+print(df_proyectado.head())  # Muestra las primeras filas de la tabla
+
+# 8. Visualizar resultados con diferentes colores
+plt.figure(figsize=(8, 6))
+
+# Crear un gráfico de dispersión con diferentes colores
+scatter = plt.scatter(df_proyectado['PC1'], df_proyectado['PC2'], c=df_proyectado.index, cmap='viridis', alpha=0.8)
+
+plt.xlabel('Componente Principal 1')
+plt.ylabel('Componente Principal 2')
+plt.title('Proyección de los datos sobre las primeras dos componentes principales')
+
+# Agregar una barra de color para indicar los índices
+plt.colorbar(scatter, label='Índice de la muestra')
+
+plt.show()
